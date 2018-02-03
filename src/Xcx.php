@@ -58,6 +58,7 @@ class Xcx
      * 解密小程序中的加密信息
      * @param $encryptedData
      * @param $iv
+     * @param $code
      * @return bool|mixed
      * @author Lejianwen
      * 返回数据示例
@@ -77,11 +78,14 @@ class Xcx
      * }
      * }
      */
-    public function decryptData($encryptedData, $iv)
+    public function decryptData($encryptedData, $iv, $code = null)
     {
+        if ($code) {
+            $this->session($code);
+        }
         $session_key = $this->session['session_key'];
         if (strlen($session_key) != 24) {
-            $this->error = 'sessionKey length error!';
+            $this->error = 'session_key length error!';
             return false;
         }
         $aesKey = base64_decode($session_key);
