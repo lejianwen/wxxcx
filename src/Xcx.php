@@ -79,7 +79,7 @@ class Xcx
      */
     public function decryptData($encryptedData, $iv)
     {
-        $session_key = $this->session['sessionKey'];
+        $session_key = $this->session['session_key'];
         if (strlen($session_key) != 24) {
             $this->error = 'sessionKey length error!';
             return false;
