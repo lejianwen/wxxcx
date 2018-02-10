@@ -14,9 +14,9 @@ class Xcx
 {
     protected $appid;
     protected $secret;
-    protected $error;
-    protected $session;
-    protected $decrypted_data;
+    public $error;
+    public $session;
+    public $decrypted_data;
 
     public function __construct($key, $secret)
     {
