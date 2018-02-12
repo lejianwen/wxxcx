@@ -9,6 +9,7 @@
 namespace Ljw\Wxxcx;
 
 use GuzzleHttp\Client;
+use Ljw\Wxxcx\Xcx\Order;
 
 class Xcx
 {
@@ -22,6 +23,16 @@ class Xcx
     {
         $this->appid = $key;
         $this->secret = $secret;
+    }
+
+    public function getAppId()
+    {
+        return $this->appid;
+    }
+
+    public function getSecret()
+    {
+        return $this->secret;
     }
 
     /**
@@ -109,4 +120,6 @@ class Xcx
         $this->decrypted_data = $data;
         return $data;
     }
+
+
 }
