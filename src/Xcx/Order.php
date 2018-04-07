@@ -16,7 +16,7 @@ class Order
     protected $xcx;
     protected $mch_id;
     protected $key;
-    protected $handler;
+    public $handler;
     public $error;
 
     public function __construct(Xcx $xcx)
@@ -145,7 +145,7 @@ class Order
      * 生成签名
      * @return $result 签名
      */
-    protected function MakeSign($arr)
+    public function MakeSign($arr)
     {
         //签名步骤一：按字典序排序参数
         ksort($arr);
