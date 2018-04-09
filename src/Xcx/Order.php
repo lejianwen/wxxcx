@@ -16,6 +16,8 @@ class Order
     protected $xcx;
     protected $mch_id;
     protected $key;
+    protected $ssl_key;
+    protected $cert;
     public $handler;
     public $error;
 
@@ -133,10 +135,27 @@ class Order
         return $xml;
     }
 
-    protected function postXml($url, $xml)
+    /**
+     * postXml
+     * @param $url
+     * @param $xml
+     * @param bool $need_cert 是否需要证书
+     * @return \Psr\Http\Message\StreamInterface
+     * @throws \Exception
+     * @author Lejianwen
+     */
+    protected function postXml($url, $xml, $need_cert = false)
     {
         $client = new Client();
-        $response = $client->post($url, ['timeout' => 30, 'body' => $xml]);
+        $options = ['timeout' => 30, 'body' => $xml, 'verify' => false];
+        if ($need_cert) {
+            if (!$this->cert || !$this->ssl_key) {
+                throw new \Exception('请设置微信证书和ssl_key');
+            }
+            $options['cert'] = $this->cert;
+            $options['ssl_key'] = $this->ssl_key;
+        }
+        $response = $client->post($url, $options);
         $body = $response->getBody();
         return $body;
     }
@@ -158,5 +177,64 @@ class Order
         //签名步骤四：所有字符转为大写
         $result = strtoupper($string);
         return $result;
+    }
+
+    /**
+     * 申请退款
+     * @param String $transaction_id 微信生成的订单号
+     * @param String $out_refund_no 商户系统内部的退款单号
+     * @param int $total_fee 订单总金额
+     * @param int $refund_fee 退款总金额
+     * @param string $refund_desc 退款理由
+     * @param string $refund_fee_type 退款货币种类，默认人名币
+     * @return array|bool
+     * @throws \Exception
+     * @author Lejianwen
+     */
+    public function refuseOrder($transaction_id, $out_refund_no, $total_fee, $refund_fee, $refund_desc = '', $refund_fee_type = 'CNY')
+    {
+        if (!$transaction_id) {
+            return false;
+        }
+        $arr = [
+            'appid'           => $this->xcx->getAppId(),
+            'mch_id'          => $this->mch_id,
+            'sign_type'       => 'MD5',
+            'nonce_str'       => md5(time()),
+            'transaction_id'  => $transaction_id,
+            'out_refund_no'   => $out_refund_no,
+            'total_fee'       => $total_fee,
+            'refund_fee'      => $refund_fee,
+            'refund_desc'     => $refund_desc,
+            'refund_fee_type' => $refund_fee_type,
+        ];
+        $sign = $this->MakeSign($arr);
+        $arr['sign'] = $sign;
+        $xml = $this->handler->ToXml($arr);
+        $url = 'https://api.mch.weixin.qq.com/secapi/pay/refund';
+        $response = $this->postXml($url, $xml, true);
+        $re_arr = $this->handler->fromXml($response);
+        if ($re_arr['return_code'] == 'FAIL') {
+            throw new \Exception($re_arr['return_msg']);
+        }
+        if (isset($re_arr['err_code'])) {
+            throw new \Exception($re_arr['err_code_des']);
+        }
+        if ($re_arr['return_code'] != 'SUCCESS' || $re_arr['result_code'] != 'SUCCESS') {
+            throw new \Exception('微信申请退款失败');
+        }
+        return $re_arr;
+    }
+
+    public function setSslKey($file_path)
+    {
+        $this->ssl_key = $file_path;
+        return $this;
+    }
+
+    public function setCert($file_path)
+    {
+        $this->cert = $file_path;
+        return $this;
     }
 }
