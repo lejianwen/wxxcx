@@ -237,4 +237,47 @@ class Order
         $this->cert = $file_path;
         return $this;
     }
+
+    /**
+     * 企业付款给用户
+     * @param string $openid 用户openid
+     * @param string $trade_no 商户订单号
+     * @param int $amount 金额(分)
+     * @param string $desc 描述
+     * @param string $ip
+     * @param bool $check_name
+     * @param string $user_name
+     * @return array|bool
+     * @throws \Exception
+     */
+    public function payToUser(
+        $openid,
+        $trade_no,
+        $amount,
+        $desc,
+        $ip = '127.0.0.1',
+        $check_name = false,
+        $user_name = ''
+    ) {
+        $url = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers';
+        $arr = [
+            'mch_appid'        => $this->xcx->getAppId(),
+            'mchid'            => $this->mch_id,
+            'nonce_str'        => md5(time()),
+            'partner_trade_no' => $trade_no,    //商户订单号，需保持唯一性(只能是字母或者数字，不能包含有符号)
+            'check_name'       => $check_name ? 'FORCE_CHECK' : 'NO_CHECK',
+            'amount'           => $amount,
+            'desc'             => $desc,
+            'spbill_create_ip' => $ip,
+            'openid'           => $openid
+        ];
+        if ($check_name) {
+            $arr['re_user_name'] = $user_name;
+        }
+        $arr['sign'] = $this->MakeSign($arr);
+        $xml = $this->handler->ToXml($arr);
+        $response = $this->postXml($url, $xml, true);
+        $re_arr = $this->handler->fromXml($response);
+        return $re_arr;
+    }
 }
